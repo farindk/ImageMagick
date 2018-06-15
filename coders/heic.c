@@ -192,10 +192,10 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
     Decode HEIF file
   */
   heif_context=heif_context_alloc();
-  error=heif_context_read_from_memory(heif_context,file_data,length,NULL);
-  file_data=RelinquishMagickMemory(file_data);
+  error=heif_context_read_from_memory_without_copy(heif_context,file_data,length,NULL);
   if (IsHeifSuccess(&error,image,exception) == MagickFalse)
     {
+      file_data=RelinquishMagickMemory(file_data);
       heif_context_free(heif_context);
       return(DestroyImageList(image));
     }
@@ -203,6 +203,7 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
   error=heif_context_get_primary_image_handle(heif_context,&image_handle);
   if (IsHeifSuccess(&error,image,exception) == MagickFalse)
     {
+      file_data=RelinquishMagickMemory(file_data);
       heif_context_free(heif_context);
       return(DestroyImageList(image));
     }
@@ -222,6 +223,7 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
       exif_size=heif_image_handle_get_metadata_size(image_handle,exif_id);
       if (exif_size > GetBlobSize(image))
         {
+          file_data=RelinquishMagickMemory(file_data);
           heif_image_handle_release(image_handle);
           heif_context_free(heif_context);
           ThrowReaderException(CorruptImageError,
@@ -256,6 +258,7 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
   status=SetImageExtent(image,image->columns,image->rows,exception);
   if (status == MagickFalse)
     {
+      file_data=RelinquishMagickMemory(file_data);
       heif_image_handle_release(image_handle);
       heif_context_free(heif_context);
       return(DestroyImageList(image));
@@ -296,6 +299,8 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
     if (SyncAuthenticPixels(image,exception) == MagickFalse)
       break;
   }
+
+  file_data=RelinquishMagickMemory(file_data);
   heif_image_release(heif_image);
   heif_image_handle_release(image_handle);
   heif_context_free(heif_context);
